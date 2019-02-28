@@ -1,6 +1,5 @@
 <?php
-include_once("/var/www/include/constants.php");
-include_once("/var/www/include/view.php");
+include_once("include/view.php");
 
 $action = "";
 if(isset($_GET["action"]))
