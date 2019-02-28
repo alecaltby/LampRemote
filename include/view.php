@@ -1,6 +1,5 @@
 <?php
-//require_once("/var/www/include/model.php");
-require_once("/var/www/include/telldus_api.php");
+require_once("include/telldus_api.php");
 
 interface view
 {
