@@ -64,11 +64,9 @@ function telldusRestart()
 			sleep(1);
 		}
 	}
-	else
-		print "Found no telldusd";
 
 	if($pid == 0)
-		exec("telldusd");
+		exec("/etc/init.d/telldusd start");
 	else
 		print "Unable to restart telldusd";
 }
