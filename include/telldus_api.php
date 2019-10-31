@@ -1,5 +1,11 @@
 <?php
 require_once("constants.php");
+
+function gotChanges()
+{
+	return system("./gotChanges.sh");
+}
+
 function createTelldusConfigFromDB()
 {
 	$mysql = new mysql();
@@ -833,7 +839,7 @@ class telldusSchedule extends mysql
 		if(!isset($this->event))
 			return "";
 
-        $tid = $this->tid;
+		$tid = $this->tid;
 
 		$return  = $this->minutes." ";
 		$return .= $this->hours." ";
@@ -843,7 +849,7 @@ class telldusSchedule extends mysql
 		$return .= "   curl \"localhost/telldus_ajax.php?id=$tid&action=".$this->event;
 
 		if($this->event == "fade")
-			$return .= " dimlevel=".$this->value;
+			$return .= "&dimlevel=".$this->value;
 
         $return .= "\"";
 

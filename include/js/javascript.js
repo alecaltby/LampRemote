@@ -1,3 +1,35 @@
+function checkChanges()
+{
+	$.ajax(
+	{
+		url: 'ajax.php',
+		data: 'action=checkChanges',
+		dataType: 'html',
+		success: function (data)
+		{
+			if(data)
+			{
+				$("#fetchChanges").display();
+			}
+		}
+	});
+}
+
+
+function fetchChanges()
+{
+	$.ajax(
+	{
+		url: 'ajax.php',
+		data: 'action=fetchChanges',
+		dataType: 'html',
+		success: function (data)
+		{
+			//window.location.reload();
+		}
+	});
+}
+
 function listenCode(obj)
 {
 	var div = $('#newTelldus');

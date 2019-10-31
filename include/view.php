@@ -262,18 +262,19 @@ class vSceneEdit implements view
 			$events = $scene->getEvents();
 			$divId = "scene".$scene->getId();
 			$return .= '<fieldset style="width: 500px;">';
-			$return .= '<div style="text-align: center; margin-bottom: 10px;">';
-			$return .= '<a class="onclick" onclick="addEventToScene('.$scene->getId().');">Add device</a> | ';
-			$return .= '<a class="onclick" onclick="deleteScene('.$scene->getId().');">Remove scene</a>';
-			$return .= '</div>';
 			$return .= '<legend align="left" class="h3 onclick" onclick="$(\'#'.$divId.'\').slideToggle();">'.$scene->getName().'</legend>';
 			$return .= "<div class=\"\" id=\"$divId\">";
-
+			$return .= '<div class="left" style="width: 125px;">Device:</div><div class="left" style="width: 80px;">Event:</div><div class="left">Fade level:</div>';
+			$return .= '<div class="footer"></div>';
 			foreach($events as $event)
 			{
 				$return .= (new vEventEdit($event));
 			}
 			$return .= "</div>";
+			$return .= '<div style="text-align: center; margin-bottom: 10px;">';
+			$return .= '<a class="onclick" onclick="addEventToScene('.$scene->getId().');">Add event</a> | ';
+			$return .= '<a class="onclick" onclick="deleteScene('.$scene->getId().');">Remove scene</a>';
+			$return .= '</div>';
 			$return .= '</fieldset>';
 		}
 
@@ -679,77 +680,17 @@ class vTelldusConfig
 		$print .= '<button onclick="reloadConfiguration()">Reload configuration</button>';
 		$print .= '<p id="reloadInfo"></p>';
 		$print .= '</fieldset>';
-		return $print;
-	}
-}
 
-class vSettings
-{
-	private $stream;
-
-	public function __construct()
-	{
-		$this->stream = new property("stream");
-	}
-
-	public function display()
-	{
-		$left = new column('leftColumn');
-		$left->setWidth(200);
-		$right = new column('leftColumn');
-		$right->setWidth(100);
-
-		$left->add("<h2>Stream</h2>");
-		$right->add('<select onchange="setProperty(\'stream\',this.value);"><option '.($this->stream->getValue() == "yes" ? "selected=\"selected\"" : "").'>yes</option><option '.($this->stream->getValue() == "no" ? "selected=\"selected\"" : "").'>no</option></select>');
-		$left->add("<h2>Rullgardin</h2>");
-		$right->add('<button onclick="curtain(\'up\');">Upp</button><button onclick="curtain(\'down\');">Ner</button>');
-
-		print "<h1 style=\"margin: 0px;\">Settings</h1>";
-		print '<div style="width: 300px; margin: 0 auto;">';
-		$left->display();
-		$right->display();
-		print '<div class="footer"></div></div>';
-	}
-}
-
-class vHandlelapp
-{
-	private $note;
-	private $notes;
-	private $action;
-
-	public function __construct()
-	{
-		$this->notes = new notes();
-	}
-
-	public function display()
-	{
-		$left = new column('leftColumn');
-		$left->setWidth(150);
-		$left->addClass('submenu');
-
-		$left->add('<ul class="submenu">');
-		foreach($this->notes->getNotes() as $value)
+		if(gotChanges())
 		{
-			$left->add('<li><a onclick="changePage(\'rightColumn\',\'note&id='.$value.'\');">'.$value.'</a></li>');
-			$left->add('<hr />');
+			$print .= '<fieldset id="fetchChanges">';
+			$print .= '<legend class="h3">Fetch latest changes</legend>';
+			$print .= '<p>Press below button to fetch latest changes.</p>';
+			$print .= '<button onclick="fetchChanges()">Fetch</button>';
+			$print .= '<p id="fetchChanges"></p>';
+			$print .= '</fieldset>';
 		}
-
-		$left->add('<li><a onclick="changePage(\'rightColumn\',\'note&id='.$this->notes->getNewId().'\');">Ny HandlelApp</a></li>');
-
-		$left->add('<ul>');
-
-		$right = new column('rightColumn');
-		$right->setWidth('640');
-		$right->add("<h2>HandlelApp</h2>");
-		$right->add('<form id="handlelapp">');
-
-		print '<div class="separator4">';
-		$left->display();
-		$right->display();
-		print '<div class="footer"></div>';
-		print '</div>';
+		return $print;
 	}
 }
 

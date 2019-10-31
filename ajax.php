@@ -9,6 +9,14 @@ else if(isset($_POST["action"]))
 
 switch($action)
 {
+	case "checkChanges":
+		print system("./fetchChanges.sh");
+	break;
+
+	case "fetchChanges":
+		print system("./fetchChanges.sh");
+	break;
+
 	case "programTelldus":
 		if(isset($_GET["id"]) && $id = (int) $_GET["id"])
 		{
