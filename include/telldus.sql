@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.7.22, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 5.5.60, for debian-linux-gnu (armv7l)
 --
 -- Host: localhost    Database: telldus
 -- ------------------------------------------------------
--- Server version	5.7.22-0ubuntu0.17.10.1
+-- Server version	5.5.60-0+deb7u1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -95,6 +95,7 @@ CREATE TABLE `telldusSchedule` (
   `daysOfMonth` varchar(5) NOT NULL DEFAULT '*',
   `months` varchar(5) NOT NULL DEFAULT '*',
   `daysOfWeek` varchar(15) NOT NULL DEFAULT '*',
+  `type` enum('event','scene') NOT NULL DEFAULT 'event',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -108,4 +109,4 @@ CREATE TABLE `telldusSchedule` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-02-28 23:16:14
+-- Dump completed on 2019-11-30 23:06:27
