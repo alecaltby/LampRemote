@@ -34,21 +34,58 @@ switch($action)
 	break;
 
 	case "telldusSchedule":
+		if(!isset($_GET["tid"]))
+		{
+			die("tid not specified");
+		}
+
+		$explode = explode(":", $_GET["tid"]);
+		$type = $explode[0];
+		$tid = $explode[1];
+
+		if($type != "event" && $type != "scene")
+		{
+			die("Invalid type: $type");
+		}
+
+		if($tid+0 == 0)
+		{
+			die("Invalid tid $tid");
+		}
+
 		if(isset($_GET["id"]) && ($id = (int) $_GET["id"]) > 0)
-			$event = new telldusSchedule($id);
+		{
+			$schedule = new telldusSchedule($id);
+			$event = $schedule->event;
+
+			if($type == "event")
+			{
+				$event->setEvent($_GET["event"]);
+				$event->setValue($_GET["value"]);
+			}
+		}
 		else
-			$event = new telldusSchedule();
+		{
+			$schedule = new telldusSchedule();
+			if($type == "event")
+			{
+				$event = new telldusEvent();
+				$event->create($tid, $_GET["event"], $_GET["value"]);
+			}
+			else
+			{
+				$event = new scene($tid);
+			}
+		}
 
-		$event->tid = (int) $_GET["tid"];
-		$event->minutes = $_GET["minutes"];
-		$event->hours = $_GET["hours"];
-		$event->daysOfMonth = $_GET["daysOfMonth"];
-		$event->months = $_GET["months"];
-		$event->daysOfWeek = $_GET["daysOfWeek"];
-		$event->event = $_GET["event"];
-		$event->value = (int) $_GET["value"];
-
-		$event->save();
+		$schedule->minutes = $_GET["minutes"];
+		$schedule->hours = $_GET["hours"];
+		$schedule->daysOfMonth = $_GET["daysOfMonth"];
+		$schedule->months = $_GET["months"];
+		$schedule->daysOfWeek = $_GET["daysOfWeek"];
+		$schedule->event = $event;
+		$schedule->type = $type;
+		$schedule->save();
 
 	break;
 	case "delTelldusSchedule":

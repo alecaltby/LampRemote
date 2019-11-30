@@ -20,6 +20,11 @@ else if(isset($_GET["sceneid"]))
 	$scene = new scene((int) $_GET["sceneid"]);
 	$_GET["action"] = "scene";
 }
+else if(isset($_GET["eventid"]))
+{
+	$event = new telldusEvent((int) $_GET["eventid"]);
+	$_GET["action"] = "event";
+}
 else
 {
 	$telldus = new tellduses();
@@ -64,6 +69,10 @@ switch($action)
 
 	case "scene":
 	$scene->execute();
+	break;
+
+	case "event":
+	$event->execute();
 	break;
 
 	case "list":

@@ -353,6 +353,23 @@ function delTelldusSchedule(rowId)
 	});
 }
 
+function telldusSchedulesSelect(obj)
+{
+	var id = obj.value;
+	if(id.includes("scene"))
+	{
+		$("#telldusSchedulesType").val("scene");
+		$("#telldusSchedulesEventAction").hide();
+		$("#telldusSchedulesEventValue").hide();
+	}
+	else
+	{
+		$("#telldusSchedulesType").val("event");
+		$("#telldusSchedulesEventAction").show();
+		$("#telldusSchedulesEventValue").show();
+	}
+}
+
 function toggleClass(obj)
 {
 	var current = $(obj)

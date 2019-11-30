@@ -218,7 +218,7 @@ class vEventEdit implements view
 	private function getFadeValue()
 	{
 		$value = $this->event->getValue();
-		return "<input onchange=\"editEvent(".$this->event->getId().")\" style=\"padding: 12px;\" type=\"text\" size=\"2\" name=\"value\" maxlength=\"3\" value=\"$value\" />";
+		return "<input onchange=\"editEvent(".$this->event->getId().")\" type=\"text\" size=\"2\" name=\"value\" maxlength=\"3\" value=\"$value\" />";
 	}
 
 	public function __toString()
@@ -325,11 +325,17 @@ class vTelldusSchedules
 {
 	protected $events;
 	protected $tellduses;
+	protected $scenes;
 	protected $hashes;
 
 	public function __construct()
 	{
-		$events = (new telldusSchedules())->getEvents();
+		$eventSchedules = new telldusSchedules();
+		$sceneSchedules = new telldusSchedules();
+		$eventSchedules->fetchEvents();
+		$sceneSchedules->fetchScenes();
+		$events = $eventSchedules->get();
+		$scenes = $sceneSchedules->get();
 
 		$tellduses = new tellduses();
 		$tellduses->getById(0);
@@ -337,6 +343,7 @@ class vTelldusSchedules
 		$this->hashes = [md5("*****")];
 
 		$this->events = $this->sortByTime($events);
+		$this->scenes = $this->sortByTime($scenes);
 	}
 
 	private function sortByTime($events)
@@ -483,10 +490,19 @@ class vTelldusSchedules
 		$print .= '<table width="100%" cellspacing="0" cellpadding="5">';
 		$print .= '<tr><td>Id</td><td>Minute</td><td>Hour</td><td>Day of month</td><td>Month</td><td>Day of week</td><td>Event</td><td>Value</td><td></td><td></td></tr>';
 		$print .= $this->getRow(new telldusSchedule());
-		$print .= '<tr><td colspan="10"><hr /></td></tr>';
+		$print .= '<tr><td colspan="10"><h2>Lamps</h2></td></tr>';
 
 		foreach($this->events as $event)
-					$print .= $this->getRow($event);
+		{
+			$print .= $this->getRow($event);
+		}
+
+		$print .= '<tr><td colspan="10"><h2>Scenes</h2></td></tr>';
+
+		foreach($this->scenes as $event)
+		{
+			$print .= $this->getRow($event);
+		}
 
 		$print .= '</table>';
 		$print .= '</form>';
@@ -494,24 +510,44 @@ class vTelldusSchedules
 		return $print;
 	}
 
-	private function getRow($event)
+	private function getRow($schedule)
 	{
-		if(!$event->id)
+		if(!$schedule->id)
 			$id = "newTelldusSchedule";
 		else
-			$id = "telldusSchedule".$event->id;
+			$id = "telldusSchedule".$schedule->id;
 
-		$print = '<tr style="background-color: '.$this->getColor($event).';" id="'.$id.'">';
-		$print .= '<td><input class="telldusSchedules" type="hidden" name="id" value="'.$event->id.'" />'.$this->selectTellduses($event->tid).'</td>';
-		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="minutes" value="'.$event->minutes.'" /></td>';
-		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="hours" value="'.$event->hours.'" /></td>';
-		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="daysOfMonth" value="'.$event->daysOfMonth.'" /></td>';
-		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="months" value="'.$event->months.'" /></td>';
-		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="daysOfWeek" value="'.$event->daysOfWeek.'" /></td>';
-		$print .= '<td>'.$this->selectEvents($event->event).'</td>';
-		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="value" value="'.$event->value.'" /></td>';
+		$event = "";
+		$value = "";
+		$tid = 0;
 
-		if(!$event->id)
+		if(isset($schedule->event) && $schedule->type == "event")
+		{
+			$event = $schedule->event->getEvent();
+			$value = $schedule->event->getValue();
+			$tid = $schedule->event->getTelldus()->getId();
+		}
+
+		$print = '<tr style="background-color: '.$this->getColor($schedule).';" id="'.$id.'">';
+		$print .= '<td><input class="telldusSchedules" type="hidden" name="id" value="'.$schedule->id.'" />'.$this->selectTellduses($schedule).'</td>';
+		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="minutes" value="'.$schedule->minutes.'" /></td>';
+		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="hours" value="'.$schedule->hours.'" /></td>';
+		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="daysOfMonth" value="'.$schedule->daysOfMonth.'" /></td>';
+		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="months" value="'.$schedule->months.'" /></td>';
+		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="daysOfWeek" value="'.$schedule->daysOfWeek.'" /></td>';
+
+		if($schedule->type == "event")
+		{
+			$print .= '<td>'.$this->selectEvents($event).'</td>';
+			$print .= '<td><input id="telldusSchedulesEventValue" class="telldusSchedules" type="text" style="width: 90%;" name="value" value="'.$value.'" /></td>';
+		}
+		else
+		{
+			$print .= '<td colspan="2"></td>';
+		}
+
+
+		if(!$schedule->id)
 		{
 			$print .= '<td><a onclick="addOrEditTelldusSchedule(\''.$id.'\')"><img src="img/add.png" /></a></td>';
 			$print .= '<td></td>';
@@ -528,7 +564,7 @@ class vTelldusSchedules
 
 	private function selectEvents($event)
 	{
-		$print = '<select class="telldusSchedules" name="event">';
+		$print = '<select id="telldusSchedulesEventAction" class="telldusSchedules" name="event">';
 		$print .= '<option '.($event == 'on' ? 'selected="selected"' : '').' value="on">On</option>';
 		$print .= '<option '.($event == 'off' ? 'selected="selected"' : '').' value="off">Off</option>';
 		$print .= '<option '.($event == 'fade' ? 'selected="selected"' : '').' value="fade">Fade</option>';
@@ -536,14 +572,36 @@ class vTelldusSchedules
 		return $print;
 	}
 
-	private function selectTellduses($tid)
+	private function selectTellduses($schedule)
 	{
-		$print = '<select class="telldusSchedules" name="tid">';
+		if(!$schedule->event)
+		{
+			$print = '<select onchange="telldusSchedulesSelect(this);" class="telldusSchedules" name="tid">';
+			$print .= '<optgroup label="Lamps">';
+			foreach($this->tellduses as $telldus)
+				$print .= '<option value="event:'.$telldus->getId().'">'.$telldus->getName().'</option>';
 
-		foreach($this->tellduses as $telldus)
-			$print .= '<option value="'.$telldus->getId().'" '.($telldus->getId() == $tid ? 'selected="selected"' : '').'>'.$telldus->getName().'</option>';
+			$print .= '</optgroup>';
+			$print .= '<optgroup label="Scenes">';
 
-		$print .= '</select>';
+			foreach(getScenes() as $scene)
+				$print .= '<option value="scene:'.$scene->getId().'">'.$scene->getName().'</option>';
+
+			$print .= '</optgroup>';
+			$print .= '</select>';
+		}
+		elseif($schedule->type == "event")
+		{
+			$id = $schedule->event->getId();
+			$print = $schedule->event->getTelldus()->getName();
+			$print .= "<input type=\"hidden\" name=\"tid\" value=\"event:$id\" />";
+		}
+		elseif($schedule->type == "scene")
+		{
+			$id = $schedule->event->getId();
+			$print = $schedule->event->getName();
+			$print .= "<input type=\"hidden\" name=\"tid\" value=\"scene:$id\" />";
+		}
 
 		return $print;
 	}

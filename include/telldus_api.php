@@ -752,46 +752,57 @@ class telldusEvent extends mysql
 
 class telldusSchedules extends mysql
 {
-	private $events = array();
+	private $schedules = array();
 	public function __construct()
 	{
 		parent::__construct();
-		$res = $this->query("SELECT telldusSchedule.id FROM telldusSchedule LEFT JOIN telldusEvent on telldusEvent.id=eventid ORDER BY tid, daysOfWeek, hours+0");
-		//$res = $this->query("SELECT id FROM telldusSchedule GROUP BY daysOfWeek ORDER BY tid") or die(mysql_error());
-		while($row = mysqli_fetch_assoc($res))
-		{
-			$this->events[] = new telldusSchedule($row["id"]);
-		}
 	}
 
 	public function __toString()
 	{
 		$cron = array();
-		foreach($this->events as $event)
+		foreach($this->schedules as $schedule)
 		{
-			$cron[] = $event->getCronRow();
+			$cron[] = $schedule->getCronRow();
 		}
 
 		return implode("\n",$cron);
 	}
 
-	public function getEvents()
+	public function fetchEvents()
 	{
-		return $this->events;
+		$res = $this->query("SELECT id FROM telldusSchedule WHERE type='event' ORDER BY daysOfWeek, hours+0");
+		while($row = mysqli_fetch_assoc($res))
+		{
+			$this->schedules[] = new telldusSchedule($row["id"]);
+		}
+	}
+
+	public function fetchScenes()
+	{
+		$res = $this->query("SELECT id FROM telldusSchedule WHERE type='scene' ORDER BY daysOfWeek, hours+0");
+		while($row = mysqli_fetch_assoc($res))
+		{
+			$this->schedules[] = new telldusSchedule($row["id"]);
+		}
+	}
+
+	public function get()
+	{
+		return $this->schedules;
 	}
 }
 
 class telldusSchedule extends mysql
 {
 	public $id;
-	public $tid;
 	public $event;
-	public $value;
 	public $minutes = "*";
 	public $hours = "*";
 	public $daysOfMonth = "*";
 	public $months = "*";
 	public $daysOfWeek = "*";
+	public $type = "event";
 
 	public function __construct($id=0)
 	{
@@ -799,19 +810,21 @@ class telldusSchedule extends mysql
 		$id = (int) $id;
 		if($id > 0)
 		{
-			$res = $this->query("SELECT telldusSchedule.*, telldusEvent.event, telldusEvent.value, telldusEvent.tid FROM telldusSchedule LEFT JOIN telldusEvent ON telldusEvent.id=telldusSchedule.eventid WHERE telldusSchedule.id=$id");
+			$res = $this->query("SELECT * FROM telldusSchedule WHERE telldusSchedule.id=$id");
 			$obj = mysqli_fetch_object($res);
 			if($obj)
 			{
 				$this->id = $obj->id;
-				$this->tid = $obj->tid;
-				$this->value = $obj->value;
-				$this->event = $obj->event;
 				$this->minutes = $obj->minutes;
 				$this->hours = $obj->hours;
 				$this->daysOfMonth = $obj->daysOfMonth;
 				$this->months = $obj->months;
 				$this->daysOfWeek = $obj->daysOfWeek;
+				$this->type = $obj->type;
+				if($obj->type == "event")
+					$this->event = new telldusEvent($obj->eventid);
+				else
+					$this->event = new scene($obj->eventid);
 			}
 		}
 	}
@@ -839,26 +852,22 @@ class telldusSchedule extends mysql
 		if(!isset($this->event))
 			return "";
 
-		$tid = $this->tid;
-
+		$parameters = ($this->type == "event" ? "eventid=" : "sceneid=").$this->event->getId();
 		$return  = $this->minutes." ";
 		$return .= $this->hours." ";
 		$return .= $this->daysOfMonth." ";
 		$return .= $this->months." ";
 		$return .= $this->daysOfWeek." ";
-		$return .= "   curl \"localhost/telldus_ajax.php?id=$tid&action=".$this->event;
-
-		if($this->event == "fade")
-			$return .= "&dimlevel=".$this->value;
-
-        $return .= "\"";
+		$return .= "   curl \"localhost/telldus_ajax.php?$parameters\"";
 
 		return $return;
 	}
 
 	public function save()
 	{
-		$array = array(	"minutes"=>$this->minutes,
+		$array = array(	"eventid"=>$this->event->getId(),
+						"type"=>$this->type,
+						"minutes"=>$this->minutes,
 						"hours"=>$this->hours,
 						"daysOfMonth"=>$this->daysOfMonth,
 						"months"=>$this->months,
@@ -877,21 +886,10 @@ class telldusSchedule extends mysql
 			}
 
 			$update = implode(",",$update);
-			$res = $this->query("SELECT eventid FROM telldusSchedule WHERE id=$id");
-			$row = mysqli_fetch_assoc($res);
-
-            $telldusEvent = new telldusEvent($row["eventid"]);
-            $telldusEvent->setEvent($this->event);
-            $telldusEvent->setValue($this->value);
 			$this->query("UPDATE telldusSchedule SET $update WHERE id=$id");
 		}
 		else
 		{
-            $telldusEvent = new telldusEvent();
-            $telldusEvent->create($this->tid, $this->event, $this->value);
-            $eventid = $telldusEvent->getId();
-            $array["eventid"] = $eventid;
-
 			$keys = array();
 			$values = array();
 			foreach($array as $key=>$value)
@@ -920,21 +918,25 @@ class telldusSchedule extends mysql
 
 		$id = (int) $this->id;
 		$this->query("DELETE FROM telldusSchedule WHERE id=$id");
-		$telldusEvent = new telldusEvent($this->event);
-		$telldusEvent->delete();
+		if($this->type == "event")
+			$this->event->delete();
 		new crontab();
 	}
 }
-
+new crontab();
 class crontab
 {
 	public function __construct()
 	{
 		//$objects[] = new rssfeeds();
-		$objects[] = new telldusSchedules();
+		$schedules = new telldusSchedules();
+		$schedules->fetchScenes();
+		$schedules->fetchEvents();
+		$objects[] = $schedules;
 
 		$print = implode("\n",$objects);
 		$print .= "\n";
+
 		$file = fopen("/tmp/crontab","w");
 		if(!$file)
 		{
