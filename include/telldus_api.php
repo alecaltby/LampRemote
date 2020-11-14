@@ -386,6 +386,24 @@ class telldus extends telldusParent implements JsonSerializable
 			{
 				$this->dimable = 1;
 				$this->dimlevel = $res["dimlevel"];
+				$this->maxdimlevel = $res["maxdimlevel"];
+				$this->mindimlevel = $res["mindimlevel"];
+				
+				if($this->maxdimlevel > 255)
+				{
+					$this->maxdimlevel = 255;
+				}
+				
+				if($this->mindimlevel < 0)
+				{
+					$this->mindimlevel = 0;
+				}
+				
+				if($this->maxdimlevel < $this->mindimlevel)
+				{
+					$this->maxdimlevel = 255;
+					$this->mindimlevel = 0;
+				}
 			}
 		}
 	}
@@ -424,13 +442,16 @@ class telldus extends telldusParent implements JsonSerializable
 		$this->query("UPDATE telldus set state=0 where id=$id");
 	}
 
-	public function fade($dimlevel)
+	public function fade($percent)
 	{
-		$this->dim($dimlevel);
+		$this->dim($percent);
 	}
 
-	public function dim($dimlevel)
+	public function dim($percent)
 	{
+		$percent = (int) $percent;
+		$range = abs($this->maxdimlevel-$this->mindimlevel);
+		$dimlevel = $this->mindimlevel+($range*$percent)/100;
 		$dimlevel = (int) $dimlevel;
 		$id = $this->id;
 		if(!$this->dimable)
@@ -438,7 +459,7 @@ class telldus extends telldusParent implements JsonSerializable
 
 		$this->tdtool("--dimlevel ".$dimlevel." --dim ".$this->id);
 		$this->dimlevel = $dimlevel;
-		$this->query("UPDATE telldus set dimlevel=$dimlevel, state=1 where id=$id");
+		$this->query("UPDATE telldus set dimlevel=$percent, state=1 where id=$id");
 	}
 
 	public function incDim()
@@ -579,7 +600,9 @@ class telldus extends telldusParent implements JsonSerializable
 
 	private function tdtool($args)
 	{
-		exec("tdtool ".$args,$ret);
+		$cmd="tdtool ".$args;
+		$this->query("INSERT INTO eventLog (command) VALUES (".$this->sqlesc($cmd).")");
+		exec($cmd,$ret);
 	}
 
 	public function program()
@@ -787,6 +810,15 @@ class telldusSchedules extends mysql
 		}
 	}
 
+	public function fetchSunSchedule()
+	{
+		$res = $this->query("SELECT id FROM telldusSchedule WHERE sun!='none'");
+		while($row = mysqli_fetch_assoc($res))
+		{
+			$this->schedules[] = new telldusSchedule($row["id"]);
+		}
+	}
+
 	public function get()
 	{
 		return $this->schedules;
@@ -803,6 +835,7 @@ class telldusSchedule extends mysql
 	public $months = "*";
 	public $daysOfWeek = "*";
 	public $type = "event";
+	public $sun = "none";
 
 	public function __construct($id=0)
 	{
@@ -820,6 +853,8 @@ class telldusSchedule extends mysql
 				$this->daysOfMonth = $obj->daysOfMonth;
 				$this->months = $obj->months;
 				$this->daysOfWeek = $obj->daysOfWeek;
+				$this->sun = $obj->sun;
+
 				$this->type = $obj->type;
 				if($obj->type == "event")
 					$this->event = new telldusEvent($obj->eventid);
@@ -865,13 +900,26 @@ class telldusSchedule extends mysql
 
 	public function save()
 	{
+		if($this->sun != "none")
+		{
+			$month = $this->sqlesc((int)date("m", time()));
+			$day = $this->sqlesc((int)date("d", time()));
+			$query = "SELECT * FROM sunSchedule WHERE day=$day && month=$month && action=".$this->sqlesc($this->sun);
+
+			$res = $this->query($query);
+			$sun = mysqli_fetch_object($res);
+			$this->minutes = $sun->minute;
+			$this->hours = $sun->hour;
+		}
+
 		$array = array(	"eventid"=>$this->event->getId(),
 						"type"=>$this->type,
 						"minutes"=>$this->minutes,
 						"hours"=>$this->hours,
 						"daysOfMonth"=>$this->daysOfMonth,
 						"months"=>$this->months,
-						"daysOfWeek"=>$this->daysOfWeek);
+						"daysOfWeek"=>$this->daysOfWeek,
+						"sun"=>$this->sun);
 
 		if(isset($this->id) && $this->id+0 > 0)
 		{
@@ -923,7 +971,7 @@ class telldusSchedule extends mysql
 		new crontab();
 	}
 }
-new crontab();
+
 class crontab
 {
 	public function __construct()
@@ -933,6 +981,7 @@ class crontab
 		$schedules->fetchScenes();
 		$schedules->fetchEvents();
 		$objects[] = $schedules;
+		$objects[] = "00  1 * * *   curl \"localhost/ajax.php?action=updateCrontabSunSchedule\"";
 
 		$print = implode("\n",$objects);
 		$print .= "\n";

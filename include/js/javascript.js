@@ -301,6 +301,7 @@ function addOrEditTelldusSchedule(rowId)
 	var daysOfWeek = $('#'+rowId+' [name=daysOfWeek]').val()
 	var event = $('#'+rowId+' [name=event]').val()
 	var value = $('#'+rowId+' [name=value]').val()
+	var sun = $('#'+rowId+' [name=sun]').val()
 
 	var url = [];
 
@@ -318,6 +319,7 @@ function addOrEditTelldusSchedule(rowId)
 	url.push('daysOfWeek='+daysOfWeek)
 	url.push('event='+event)
 	url.push('value='+value)
+	url.push('sun='+sun)
 
 	url_string = url.join('&')
 

@@ -6,7 +6,7 @@ $mysql = new mysql();
 <html>
 <head>
         <title>Telldus</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+        <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
         <title>Index</title>
         <link rel="stylesheet" href="include/jquery.mobile-1.4.0.css" />
         <script src="include/js/jquery-1.9.1.js"></script>

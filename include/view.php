@@ -61,6 +61,23 @@ class vLamps
 	}
 }
 
+class vRunning implements view
+{
+	public function __construct()
+	{
+	}
+	
+	public function __toString()
+	{
+		return file_get_contents("running-stats/index.html");
+	}
+	
+	public function display()
+	{
+		print $this;
+	}
+}
+
 class vTellduses implements view
 {
 	private $tellduses;
@@ -127,7 +144,7 @@ class vTelldus implements view
 		if($t->getDimable())
 		{
             $return .= '<div class="right">';
-            $return .= '<input onchange="telldus('.$t->getId().', \'fade\', this.value);" style="height: 30px; width: 200px; border-radius: 15px; background-color: rgba(0,0,0,0);" type="range" min="1" max="255" value="'.$t->getDimlevel().'">';
+            $return .= '<input onchange="telldus('.$t->getId().', \'fade\', this.value);" style="height: 30px; width: 200px; border-radius: 15px; background-color: rgba(0,0,0,0);" type="range" min="0" max="100" value="'.$t->getDimlevel().'">';
             $return .= '</div>';
 		}
 
@@ -209,7 +226,10 @@ class vEventEdit implements view
 		$return = '<select onchange="editEvent('.$this->event->getId().')" name="event">';
 		$return .= "<option $on value=\"on\">On</option>";
 		$return .= "<option $off value=\"off\">Off</option>";
-		$return .= "<option $fade value=\"fade\">Fade</option>";
+		if($this->event->getTelldus()->getDimable())
+		{
+			$return .= "<option $fade value=\"fade\">Fade</option>";
+		}
 		$return .= '</select>';
 
 		return $return;
@@ -217,8 +237,15 @@ class vEventEdit implements view
 
 	private function getFadeValue()
 	{
-		$value = $this->event->getValue();
-		return "<input onchange=\"editEvent(".$this->event->getId().")\" type=\"text\" size=\"2\" name=\"value\" maxlength=\"3\" value=\"$value\" />";
+		if($this->event->getTelldus()->getDimable())
+		{
+			$value = $this->event->getValue();
+			return "<input onchange=\"editEvent(".$this->event->getId().")\" type=\"text\" size=\"2\" name=\"value\" maxlength=\"3\" value=\"$value\" />";
+		}
+		else
+		{
+			return "";
+		}
 	}
 
 	public function __toString()
@@ -369,7 +396,14 @@ class vTelldusSchedules
 
 	private function getHashId($event)
 	{
-		$hash = md5("".$event->minutes.$event->hours.$event->daysOfMonth.$event->months.$event->daysOfWeek);
+		if($event->sun != "none")
+		{
+			$hash = md5("".$event->sun.$event->daysOfMonth.$event->months.$event->daysOfWeek);
+		}
+		else
+		{
+			$hash = md5("".$event->minutes.$event->hours.$event->daysOfMonth.$event->months.$event->daysOfWeek);
+		}
 		foreach($this->hashes as $key=>$value)
 		{
 			if($hash == $value)
@@ -488,7 +522,7 @@ class vTelldusSchedules
 		$print = '<h2>Schedule</h2>';
 		$print .= '<form>';
 		$print .= '<table width="100%" cellspacing="0" cellpadding="5">';
-		$print .= '<tr><td>Id</td><td>Minute</td><td>Hour</td><td>Day of month</td><td>Month</td><td>Day of week</td><td>Event</td><td>Value</td><td></td><td></td></tr>';
+		$print .= '<tr><td>Id</td><td>Minute</td><td>Hour</td><td>Day of month</td><td>Month</td><td>Day of week</td><td>Sun</td><td>Event</td><td>Fade value</td><td></td><td></td></tr>';
 		$print .= $this->getRow(new telldusSchedule());
 		$print .= '<tr><td colspan="10"><h2>Lamps</h2></td></tr>';
 
@@ -535,6 +569,7 @@ class vTelldusSchedules
 		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="daysOfMonth" value="'.$schedule->daysOfMonth.'" /></td>';
 		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="months" value="'.$schedule->months.'" /></td>';
 		$print .= '<td><input class="telldusSchedules" type="text" style="width: 90%;" name="daysOfWeek" value="'.$schedule->daysOfWeek.'" /></td>';
+		$print .= '<td>'.$this->selectSun($schedule->sun).'</td>';
 
 		if($schedule->type == "event")
 		{
@@ -559,6 +594,16 @@ class vTelldusSchedules
 		}
 		$print .= '</tr>';
 
+		return $print;
+	}
+
+	private function selectSun($event)
+	{
+		$print = '<select id="telldusSchedulesSunAction" class="telldusSchedules" name="sun">';
+		$print .= '<option '.($event == 'none' ? 'selected="selected"' : '').' value="none"></option>';
+		$print .= '<option '.($event == 'rise' ? 'selected="selected"' : '').' value="rise">Rise</option>';
+		$print .= '<option '.($event == 'set' ? 'selected="selected"' : '').' value="set">Set</option>';
+		$print .= '</select>';
 		return $print;
 	}
 

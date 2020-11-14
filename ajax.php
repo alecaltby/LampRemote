@@ -85,6 +85,7 @@ switch($action)
 		$schedule->daysOfWeek = $_GET["daysOfWeek"];
 		$schedule->event = $event;
 		$schedule->type = $type;
+		$schedule->sun = $_GET["sun"];
 		$schedule->save();
 
 	break;
@@ -227,6 +228,15 @@ switch($action)
 
 	case "reloadConfiguration":
 		createTelldusConfigFromDB();
+	break;
+
+	case "updateCrontabSunSchedule":
+		$sunSchedule = new telldusSchedules();
+		$sunSchedule->fetchSunSchedule();
+		foreach($sunSchedule->get() as $schedule)
+		{
+			$schedule->save();
+		}
 	break;
 
 
