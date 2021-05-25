@@ -35,7 +35,7 @@ foreach($tellduses->getTellduses() as $t)
   print '<div class="ui-block-a"><input type="checkbox" class="state" id="switch-'.$t->getId().'" data-role="flipswitch" data-theme="a" '.($t->getState() ? "checked" : "").'></div>';
 
   if($t->getDimable())
-    print '<div class="ui-block-b slider" id="sliderId-'.$t->getId().'"><input type="range" id="slider'.$t->getId().'" value="'.$t->getDimlevel().'" min="0" max="255" data-theme="a" /></div>';
+    print '<div class="ui-block-b slider" id="sliderId-'.$t->getId().'"><input type="range" id="slider'.$t->getId().'" value="'.$t->getDimlevel().'" min="0" max="100" data-theme="a" /></div>';
 
   print '</div>';
   print '</fieldset>';
